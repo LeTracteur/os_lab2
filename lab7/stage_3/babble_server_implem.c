@@ -104,10 +104,17 @@ void server_data_init(void)
     server_start = time(NULL);
 
     registration_init();
-    pthread_t nb;
+    pthread_t exc_tids[BABBLE_EXECUTOR_THREADS];
     pthread_t ans_tids[BABBLE_ANSWER_THREADS];
-    pthread_create(&nb, NULL, executor, NULL);
     unsigned long i = 0;
+    
+    for( i = 0; i < BABBLE_EXECUTOR_THREADS; i++)
+    {
+        if (pthread_create(&exc_tids[i], NULL, executor, NULL)!=0) {
+            fprintf(stderr,"Failed to create thread %lu\n", i);
+        }
+    }
+    
     for(i = 0; i < BABBLE_ANSWER_THREADS; i++)
     {
         if(pthread_create (&ans_tids[i], NULL, answering_fct, NULL) != 0){

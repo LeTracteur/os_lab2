@@ -73,13 +73,13 @@ client_bundle_t* registration_lookup(unsigned long key)
 
 int registration_insert(client_bundle_t* cl)
 {   
-    writing(); 
     if(nb_registered_clients == MAX_CLIENT){
         fprintf(stderr, "ERROR: MAX NUMBER OF CLIENTS REACHED\n");
         return -1;
     }
     
     /* lookup to find if key already exists */
+    writing(); 
     int i=0;
     
     for(i=0; i< nb_registered_clients; i++){
