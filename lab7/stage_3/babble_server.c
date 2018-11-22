@@ -322,13 +322,13 @@ void* answering_fct(void* arg){
         sem_wait(&ansfull);
         sem_wait(&mutex_ans);
         answer_t* answer = ans_buffer[out_ans];
+        out_ans = (out_ans+1)%BABBLE_ANSWER_THREADS;
+        sem_post(&mutex_ans);
+        sem_post(&ansempty);
         if(send_answer_to_client(answer) == -1){
             fprintf(stderr, "Warning: unable to answer command from client %lu\n", answer->key);
         }
         free_answer(answer);
-        out_ans = (out_ans+1)%BABBLE_ANSWER_THREADS;
-        sem_post(&mutex_ans);
-        sem_post(&ansempty);
     }
     return NULL;
 }
