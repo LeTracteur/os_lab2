@@ -19,6 +19,8 @@
 
 
 time_t server_start;
+pthread_rwlock_t rwlock_follow = PTHREAD_RWLOCK_INITIALIZER;
+pthread_rwlock_t rwlock_timeline = PTHREAD_RWLOCK_INITIALIZER;
 
 /* freeing client_bundle_t struct */
 static void free_client_data(client_bundle_t *client)
@@ -264,7 +266,9 @@ int run_publish_command(command_t *cmd, answer_t **answer)
 
     for(i=0; i<client->nb_followers; i++){
         if(!client->followers[i]->disconnected){
+            pthread_rwlock_wrlock(&rwlock_timeline);
             date = timeline_insert(client->followers[i]->timeline, client, cmd->msg);
+            pthread_rwlock_unlock(&rwlock_timeline);
         }
         else{
             /* remove the client from the set of followers */
@@ -317,8 +321,8 @@ int run_follow_command(command_t *cmd, answer_t **answer)
     }
     
     /* if client is not already followed, add it */
+    pthread_rwlock_wrlock(&rwlock_follow);
     int i=0;
-
     for(i=0; i<f_client->nb_followers; i++){
         if(f_client->followers[i]->key == client->key){
             break;
@@ -332,7 +336,8 @@ int run_follow_command(command_t *cmd, answer_t **answer)
     else{
         printf("Warning: %s already follows %s\n", client->client_name, f_client->client_name);
     }
-    
+    pthread_rwlock_unlock(&rwlock_follow);
+
     /* generate answer to client */
     if(cmd->answer_expected){
 
@@ -363,8 +368,9 @@ int run_timeline_command(command_t *cmd, answer_t **answer)
         generate_cmd_error(cmd, answer);
         return -1;
     }
-    
+    pthread_rwlock_rdlock(&rwlock_timeline);
     timeline_generate_summary(client->timeline, answer);
+    pthread_rwlock_unlock(&rwlock_timeline);
 
     
     return 0;
@@ -391,14 +397,16 @@ int run_fcount_command(command_t *cmd, answer_t **answer)
 
     msg_buffer = malloc(BABBLE_BUFFER_SIZE);
     
+    pthread_rwlock_rdlock(&rwlock_follow);
     snprintf(msg_buffer, BABBLE_BUFFER_SIZE,"%s[%ld]: has %d followers\n", client->client_name, time(NULL) - server_start, client->nb_followers);
+    pthread_rwlock_unlock(&rwlock_follow);
     
     add_msg_to_answer(the_answer, BABBLE_BUFFER_SIZE, msg_buffer);
 
     free(msg_buffer);
 
     *answer = the_answer;
-    
+
     return 0;
 }
 

@@ -297,10 +297,13 @@ void* executor(void* arg){
         sem_wait(&mutex);
         command_t* cmd = cmd_buffer[out];
         answer_t *answer=NULL;
+        cmd_buffer[out] = NULL;
         out = (out+1)%BABBLE_PRODCONS_SIZE;
         sem_post(&mutex);
         sem_post(&emptybuffer);
         //creer un buffer un reponse
+        
+        
         if(process_command(cmd, &answer) == -1){
             fprintf(stderr, "Warning: unable to process command from client %lu\n", cmd->key);
         }
